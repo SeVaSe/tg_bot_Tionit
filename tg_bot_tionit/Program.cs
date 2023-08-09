@@ -20,18 +20,12 @@ namespace tg_bot_tionit
 
         static async Task Main(string[] args)
         {
-            // Подписка на событие получения новых сообщений
-            Bot_Tg.OnMessage += Input_Message;
+            Bot_Tg.OnMessage += Input_Message;// Подписка на событие получения новых сообщений
+            Bot_Tg.OnMessage += Output_Message;
+            Bot_Tg.StartReceiving();  // Начало приема новых сообщений от Telegram
+            Console.ReadKey();  // ожидание нажатия клавиши для завершения программы
+            Bot_Tg.StopReceiving(); // Остановка приема новых сообщений от Telegram
 
-            // Начало приема новых сообщений от Telegram
-            Bot_Tg.StartReceiving();
-
-            // Вывод сообщения в консоль и ожидание нажатия клавиши для завершения программы
-            Console.WriteLine("Bot is listening. Press any key to exit...");
-            Console.ReadKey();
-
-            // Остановка приема новых сообщений от Telegram
-            Bot_Tg.StopReceiving();
         }
 
         private static async void Input_Message(object sender, MessageEventArgs e)
@@ -54,19 +48,37 @@ namespace tg_bot_tionit
             var clientTheme = $"Forwarded from {Our_Clients[mes.Chat.Id]}";
             var mesClient = $"{clientTheme}\n{mes.Text}";
             // отправляю соо в группу
+
+            long i = mes.Chat.Id;
             await SendInChatOperators(mesClient);
+
 
             
 
 
+        }
+
+        private static async void Output_Message(object sender, MessageEventArgs e)
+        {
+            var mes = e.Message;
+
+            if (mes == null) // если сообщение будет пустное
+            {
+                return;
+            }
+            // Отправляем ответ клиенту
+            var clientMessage = $"Ответ: {mes.Text}";
+            await Bot_Tg.SendTextMessageAsync(mes.Chat.Id, clientMessage);
 
         }
 
+
+
+        // Метод для отправки сообщения операторам
         private static async Task SendInChatOperators(string mesClient)
         {
             long IdGroup = -1001711439253; // это ID группы операторов, через него как я понял, можно будет отправить сообщение в группу
                                            // получил я его с помощью бота LeadConverter
-
             await Bot_Tg.SendTextMessageAsync(IdGroup, mesClient);
         }
 
