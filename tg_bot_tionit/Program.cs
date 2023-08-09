@@ -37,6 +37,12 @@ namespace tg_bot_tionit
                 Our_Clients.Add(mes.Chat.Id, nameClient);
             }
 
+            // создание темы + получение сообщения от клиента
+            var clientTheme = $"Forwarded from {Our_Clients[mes.Chat.Id]}";
+            var mesClient = $"{clientTheme}\n{mes.Text}";
+
+
+
         }
 
 
