@@ -7,60 +7,73 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-//6489394873:AAET3koh_wVNMO2rX7zIyFLwBYOoR70ZlFc
+
 namespace tg_bot_tionit
 {
     internal class Program
     {
-        private static readonly TelegramBotClient Bot_Tg = new TelegramBotClient("6489394873:AAET3koh_wVNMO2rX7zIyFLwBYOoR70ZlFc");
-        private static readonly Dictionary<long, long> ClientToOperatorMap = new Dictionary<long, long>();
-        private static readonly long OperatorGroupId = -1001711439253; // Replace with your operator group ID
+        // токен
+        private static readonly TelegramBotClient Bot_Tg = new TelegramBotClient("6489394873:AAET3koh_wVNMO2rX7zIyFLwBYOoR70ZlFc"); 
+        private static Dictionary<long, string> Our_Clients = new Dictionary<long, string>();// словарь с данными клиента
+        
+        
 
         static async Task Main(string[] args)
         {
-            Bot_Tg.OnMessage += Bot_OnMessage;
-            Bot_Tg.StartReceiving();
-            Console.WriteLine("Bot started. Press any key to exit...");
-            Console.ReadKey();
-            Bot_Tg.StopReceiving();
+            Bot_Tg.OnMessage += Input_Message;// Подписка на событие получения новых сообщений
+            Bot_Tg.OnMessage += Output_Message;
+            Bot_Tg.StartReceiving();  // Начало приема новых сообщений от Telegram
+            Console.ReadKey();  // ожидание нажатия клавиши для завершения программы
+            Bot_Tg.StopReceiving(); // Остановка приема новых сообщений от Telegram
         }
 
-        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
-        {
-            var message = e.Message;
 
-            if (message == null)
+        private static async void Input_Message(object sender, MessageEventArgs e)
+        {
+            var mes = e.Message;
+
+            if (mes == null) // если сообщение будет пустное
             {
                 return;
             }
 
-            if (message.Type == MessageType.Text)
+            // проверка есть ли клиент в словаре, если нет то делаю заношу его и делаю новую тему
+            if (!Our_Clients.ContainsKey(mes.Chat.Id))
             {
-                if (message.Chat.Type == ChatType.Group && message.Chat.Id == OperatorGroupId)
-                {
-                    // Message is from operator group, forward it to the appropriate client
-                    if (ClientToOperatorMap.ContainsKey(message.Chat.Id))
-                    {
-                        long clientId = ClientToOperatorMap[message.Chat.Id];
-                        await Bot_Tg.SendTextMessageAsync(clientId, message.Text);
-                    }
-                }
-                else if (message.Chat.Type == ChatType.Private)
-                {
-                    // Message is from a client, forward it to the operator group
-                    await ForwardToOperatorGroup(message);
-                }
+                var nameClient = mes.Chat.FirstName;
+                Our_Clients.Add(mes.Chat.Id, nameClient);
             }
+
+            // создание темы + получение сообщения от клиента
+            var clientTheme = $"Forwarded from {Our_Clients[mes.Chat.Id]}";
+            var mesClient = $"{clientTheme}\n{mes.Text}";
+            // отправляю соо в группу
+
+            long i = mes.Chat.Id;
+            await SendInChatOperators(mesClient);
         }
 
-        private static async Task ForwardToOperatorGroup(Message message)
-        {
-            // Store the mapping between client and operator
-            ClientToOperatorMap[message.Chat.Id] = OperatorGroupId;
 
-            // Forward the message to the operator group
-            var forwardedMessage = $"Forwarded from client: {message.Chat.FirstName}\n{message.Text}";
-            await Bot_Tg.SendTextMessageAsync(OperatorGroupId, forwardedMessage);
+        private static async void Output_Message(object sender, MessageEventArgs e)
+        {
+            var mes = e.Message;
+
+            if (mes == null) // если сообщение будет пустное
+            {
+                return;
+            }
+            // Отправляем ответ клиенту
+            var clientMessage = $"Ответ: {mes.Text}";
+            await Bot_Tg.SendTextMessageAsync(mes.Chat.Id, clientMessage);
+        }
+
+        
+        // Метод для отправки сообщения операторам
+        private static async Task SendInChatOperators(string mesClient)
+        {
+            long IdGroup = -1001711439253; // это ID группы операторов, через него как я понял, можно будет отправить сообщение в группу
+                                           // получил я его с помощью бота LeadConverter
+            await Bot_Tg.SendTextMessageAsync(IdGroup, mesClient);
         }
     }
 }
