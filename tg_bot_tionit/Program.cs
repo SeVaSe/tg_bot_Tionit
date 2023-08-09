@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 
 namespace tg_bot_tionit
 {
@@ -22,6 +23,19 @@ namespace tg_bot_tionit
 
         private static async void Input_Message(object sender, MessageEventArgs e)
         {
+            var mes = e.Message;
+
+            if (mes == null) // если сообщение будет пустное
+            {
+                return;
+            }
+
+            // проверка есть ли клиент в словаре, если нет то делаю заношу его и делаю новую тему
+            if (!Our_Clients.ContainsKey(mes.Chat.Id))
+            {
+                var nameClient = mes.Chat.FirstName;
+                Our_Clients.Add(mes.Chat.Id, nameClient);
+            }
 
         }
 
